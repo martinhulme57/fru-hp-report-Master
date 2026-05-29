@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FRU HP Weekly Report</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#F5C400;--gold-s:rgba(245,196,0,0.10);--gold-b:rgba(245,196,0,0.28);
+  --navy:#001F5B;--bg:#06081a;--surf:#0b0e24;--card:#0f1328;
+  --bdr:rgba(255,255,255,0.07);--bdr2:rgba(255,255,255,0.13);
+  --mut:#5a6a9a;--mut2:#8898cc;--txt:#d8e4ff;--wht:#f0f5ff;
+  --blue:#4a9eff;--blue-s:rgba(74,158,255,0.10);--blue-b:rgba(74,158,255,0.28);
+  --red:#ff4060;--red-s:rgba(255,64,96,0.10);--red-b:rgba(255,64,96,0.28);
+  --grn:#20d470;--grn-s:rgba(32,212,112,0.10);--grn-b:rgba(32,212,112,0.28);
+  --amb:#f5a020;
+}
+body{background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.6;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse 80% 60% at 0% 0%,rgba(0,31,91,0.6) 0%,transparent 55%),radial-gradient(ellipse 50% 40% at 100% 100%,rgba(245,196,0,0.03) 0%,transparent 50%)}
+.app{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:0 20px 80px}
+
+/* HEADER */
+.hdr{display:flex;align-items:center;gap:16px;padding:22px 0 18px;border-bottom:1px solid var(--bdr2);margin-bottom:24px}
+.hex{width:48px;height:48px;flex-shrink:0;background:var(--gold);clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:13px;color:var(--navy);letter-spacing:1px;text-align:center;line-height:1.1}
+.hdr-t h1{font-family:'Bebas Neue';font-size:26px;letter-spacing:3px;color:var(--wht);line-height:1}
+.hdr-t p{font-size:10px;color:var(--mut);letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+.hdr-badge{margin-left:auto;font-family:'DM Mono';font-size:10px;color:var(--gold);background:var(--gold-s);border:1px solid var(--gold-b);padding:5px 12px;letter-spacing:1px;text-align:center}
+
+/* STEPS */
+.steps{display:flex;gap:0;margin-bottom:28px;border-bottom:1px solid var(--bdr2)}
+.step{flex:1;padding:12px 8px;text-align:center;border-bottom:2px solid transparent;cursor:pointer;transition:all 0.15s;position:relative;bottom:-1px}
+.step-num{font-family:'Bebas Neue';font-size:22px;color:var(--mut);line-height:1;transition:color 0.15s}
+.step-lbl{font-family:'DM Mono';font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--mut);margin-top:2px;transition:color 0.15s}
+.step.done .step-num{color:var(--grn)}
+.step.done .step-lbl{color:var(--grn)}
+.step.done{border-bottom-color:var(--grn)}
+.step.active .step-num{color:var(--gold)}
+.step.active .step-lbl{color:var(--gold)}
+.step.active{border-bottom-color:var(--gold)}
+
+/* PAGES */
+.page{display:none}.page.on{display:block;animation:fadeUp 0.25s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* SECTION */
+.sec{margin-bottom:18px}
+.sec-hd{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.sec-ico{font-size:14px}
+.sec-ttl{font-family:'Bebas Neue';font-size:16px;letter-spacing:2px;color:var(--wht)}
+.sec-rule{flex:1;height:1px;background:var(--bdr)}
+
+/* CARD */
+.card{background:var(--card);border:1px solid var(--bdr);padding:16px 18px;margin-bottom:8px}
+.clbl{font-family:'DM Mono';font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut);margin-bottom:7px;display:block}
+.hint{font-size:11px;color:var(--mut);font-style:italic;margin-bottom:8px;display:block}
+
+/* SELECTS AND INPUTS */
+select,textarea,input[type=text],input[type=number]{width:100%;background:var(--surf);border:1px solid var(--bdr2);color:var(--txt);padding:10px 12px;font-family:'DM Sans';font-size:13px;outline:none;transition:border-color 0.15s;-webkit-appearance:none;appearance:none}
+select{cursor:pointer}
+select option{background:#0f1328;color:var(--txt)}
+textarea{resize:vertical;min-height:80px;line-height:1.6}
+input[type=number]{min-height:unset}
+select:focus,textarea:focus,input:focus{border-color:rgba(255,255,255,0.25)}
+select::placeholder,textarea::placeholder,input::placeholder{color:var(--mut)}
+.sh{min-height:unset!important;height:40px;resize:none}
+.fld{margin-bottom:0}
+.fld label{font-family:'DM Mono';font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);display:block;margin-bottom:5px}
+
+/* GRID */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+/* PILLS */
+.pills{display:flex;flex-wrap:wrap;gap:5px}
+.pill{font-family:'DM Mono';font-size:10px;letter-spacing:1px;padding:5px 12px;border:1px solid var(--bdr2);background:transparent;color:var(--mut2);cursor:pointer;transition:all 0.12s;user-select:none}
+.pill:hover{color:var(--txt);border-color:rgba(255,255,255,0.2)}
+.pill.on{border-color:var(--gold-b);color:var(--gold);background:var(--gold-s)}
+
+/* DAY PILLS */
+.day-pill{font-family:'DM Mono';font-size:10px;letter-spacing:1px;padding:6px 12px;border:1px solid var(--bdr2);background:transparent;color:var(--mut2);cursor:pointer;transition:all 0.12s;user-select:none;min-width:90px;text-align:center}
+.day-pill:hover{border-color:rgba(255,255,255,0.2);color:var(--txt)}
+.day-pill[data-s="1"]{border-color:var(--grn-b);color:var(--grn);background:var(--grn-s)}
+.day-pill[data-s="2"]{border-color:var(--gold-b);color:var(--gold);background:var(--gold-s)}
+.day-pill[data-s="3"]{border-color:rgba(245,160,32,0.28);color:var(--amb);background:rgba(245,160,32,0.10)}
+.day-pill[data-s="4"]{border-color:var(--red-b);color:var(--red);background:var(--red-s)}
+.day-pill[data-s="5"]{border-color:var(--blue-b);color:var(--blue);background:var(--blue-s)}
+
+/* DOTS */
+.dot-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.dot-row:last-child{margin-bottom:0}
+.dot-lbl{font-size:12px;color:var(--txt);width:150px;flex-shrink:0}
+.dots{display:flex;gap:4px}
+.dot{width:30px;height:30px;border:1px solid var(--bdr2);display:flex;align-items:center;justify-content:center;font-family:'DM Mono';font-size:11px;color:var(--mut);cursor:pointer;transition:all 0.12s;user-select:none}
+.dot:hover{color:var(--txt);border-color:rgba(255,255,255,0.2)}
+.dot.on{background:var(--gold);border-color:var(--gold);color:var(--navy);font-weight:700}
+
+/* INJURY TABLE */
+.inj-hdr{display:grid;grid-template-columns:1fr 2fr 100px 32px;gap:8px;margin-bottom:4px}
+.inj-hdr span{font-family:'DM Mono';font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--mut)}
+.inj-row{display:grid;grid-template-columns:1fr 2fr 100px 32px;gap:8px;margin-bottom:6px;align-items:start}
+.inj-row input{height:36px;font-size:12px}
+.rm{background:transparent;border:none;color:var(--mut);cursor:pointer;font-size:18px;line-height:1;padding:4px;transition:color 0.12s;align-self:center}
+.rm:hover{color:var(--red)}
+.add-btn{margin-top:6px;padding:7px 14px;font-family:'DM Mono';font-size:9px;letter-spacing:1px;text-transform:uppercase;background:transparent;border:1px dashed var(--bdr2);color:var(--mut);cursor:pointer;transition:all 0.12s}
+.add-btn:hover{color:var(--txt);border-color:rgba(255,255,255,0.2)}
+
+/* NAV BUTTONS */
+.nav{display:flex;gap:10px;margin-top:24px}
+.nav-btn{flex:1;padding:14px;font-family:'Bebas Neue';font-size:18px;letter-spacing:3px;border:none;cursor:pointer;transition:opacity 0.15s}
+.nav-btn.back{background:var(--surf);color:var(--mut2);border:1px solid var(--bdr2)}
+.nav-btn.next{background:var(--blue);color:#fff}
+.nav-btn.submit{background:var(--gold);color:var(--navy)}
+.nav-btn:hover{opacity:0.85}
+
+/* SUCCESS */
+.success{text-align:center;padding:60px 20px}
+.success-icon{font-size:64px;margin-bottom:16px}
+.success h2{font-family:'Bebas Neue';font-size:36px;letter-spacing:3px;color:var(--gold);margin-bottom:8px}
+.success p{color:var(--mut2);font-size:14px;margin-bottom:24px;max-width:400px;margin-left:auto;margin-right:auto}
+.new-btn{padding:14px 32px;font-family:'Bebas Neue';font-size:18px;letter-spacing:3px;border:none;background:var(--gold);color:var(--navy);cursor:pointer;transition:opacity 0.15s;margin:4px}
+.new-btn:hover{opacity:0.85}
+.new-btn.sec-btn{background:var(--surf);color:var(--txt);border:1px solid var(--bdr2)}
+
+/* TOAST */
+#toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--red);color:#fff;font-family:'DM Mono';font-size:12px;letter-spacing:1px;padding:12px 24px;z-index:9999;pointer-events:none;opacity:0;transition:opacity 0.2s;white-space:nowrap}
+
+/* ROLE INDICATOR */
+.role-tag{display:inline-block;font-family:'DM Mono';font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding:4px 12px;margin-bottom:16px}
+.role-tag.sc{background:var(--blue-s);border:1px solid var(--blue-b);color:var(--blue)}
+.role-tag.hc{background:var(--gold-s);border:1px solid var(--gold-b);color:var(--gold)}
+.role-tag.md{background:var(--red-s);border:1px solid var(--red-b);color:var(--red)}
+
+/* PROGRESS */
+.prog-bar{height:3px;background:var(--bdr2);margin-bottom:24px}
+.prog-fill{height:100%;background:var(--gold);transition:width 0.4s ease}
+
+@media(max-width:580px){
+  .g2,.g3{grid-template-columns:1fr}
+  .step-lbl{display:none}
+  .inj-row,.inj-hdr{grid-template-columns:1fr 1fr}
+  .dot-lbl{width:110px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="hdr">
+  <div class="hex">FRU<br>HP</div>
+  <div class="hdr-t">
+    <h1>Fiji Rugby Union</h1>
+    <p>High Performance Weekly Report &nbsp;·&nbsp; 2026</p>
+  </div>
+  <div class="hdr-badge">WEEKLY<br>REPORT</div>
+</div>
+
+<!-- STEP INDICATOR -->
+<div class="steps">
+  <div class="step active" id="stp0"><div class="step-num">1</div><div class="step-lbl">Who</div></div>
+  <div class="step" id="stp1"><div class="step-num">2</div><div class="step-lbl">Report</div></div>
+  <div class="step" id="stp2"><div class="step-num">3</div><div class="step-lbl">Submit</div></div>
+</div>
+
+<div class="prog-bar"><div class="prog-fill" id="prog" style="width:33%"></div></div>
+
+<!-- PAGE 0: WHO ARE YOU -->
+<div class="page on" id="pg0">
+  <div class="sec">
+    <div class="sec-hd"><div class="sec-ico">👤</div><div class="sec-ttl">Who Are You</div><div class="sec-rule"></div></div>
+    <div class="card">
+      <div class="g2" style="margin-bottom:10px">
+        <div class="fld">
+          <label>Your Name</label>
+          <input type="text" id="p-name" placeholder="Full name">
+        </div>
+        <div class="fld">
+          <label>Your Role</label>
+          <select id="p-role">
+            <option value="">-- Select Role --</option>
+            <option value="S&C Coach">S&C Coach</option>
+            <option value="Head Coach">Head Coach</option>
+            <option value="Medical Staff">Medical Staff</option>
+          </select>
+        </div>
+      </div>
+      <div class="g2">
+        <div class="fld">
+          <label>Squad</label>
+          <select id="p-squad">
+            <option value="">-- Select Squad --</option>
+            <option value="Mens 7s">Mens 7s</option>
+            <option value="Womens 7s">Womens 7s</option>
+            <option value="Fijiana 15s">Fijiana 15s</option>
+            <option value="Flying Fijians">Flying Fijians</option>
+            <option value="Mens U/20s">Mens U/20s</option>
+            <option value="Fijiana Drua Womens Team">Fijiana Drua Womens Team</option>
+          </select>
+        </div>
+        <div class="fld">
+          <label>Week</label>
+          <select id="p-week">
+            <option value="">-- Select Week --</option>
+            <option>Wk1</option><option>Wk2</option><option>Wk3</option>
+            <option>Wk4</option><option>Wk5</option><option>Wk6</option>
+            <option>Wk7</option><option>Wk8</option><option>Wk9</option>
+            <option>Wk10</option><option>Wk11</option><option>Wk12</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="nav">
+    <button class="nav-btn next" onclick="goNext(0)">Next &rarr;</button>
+  </div>
+</div>
+
+<!-- PAGE 1: REPORT (role-specific) -->
+<div class="page" id="pg1">
+  <div id="role-tag-wrap"></div>
+
+  <!-- S&C -->
+  <div id="form-sc" style="display:none">
+
+    <div class="sec">
+      <div class="sec-hd"><div class="sec-ico">📋</div><div class="sec-ttl">Sessions</div><div class="sec-rule"></div></div>
+      <div class="card">
+        <div class="g3">
+          <div class="fld"><label>Sessions Done</label><input type="number" id="sc-done" placeholder="0" min="0"></div>
+          <div class="fld"><label>Sessions Planned</label><input type="number" id="sc-plan" placeholder="0" min="0"></div>
+          <div class="fld"><label>Active Players</label><input type="number" id="sc-plyrs" placeholder="0" min="0"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-hd"><div class="sec-ico">📊</div><div class="sec-ttl">Weekly Load Profile</div><div class="sec-rule"></div></div>
+      <div class="card">
+        <span class="clbl">Tap each day to cycle: Off / Easy / Moderate / Hard / Match / Rest</span>
+        <div class="pills" id="dayPills">
+          <span class="day-pill" data-day="Mon" data-s="0" onclick="cycleDay(this)">Mon &mdash; Off</span>
+          <span class="day-pill" data-day="Tue" data-s="0" onclick="cycleDay(this)">Tue &mdash; Off</span>
+          <span class="day-pill" data-day="Wed" data-s="0" onclick="cycleDay(this)">Wed &mdash; Off</span>
+          <span class="day-pill" data-day="Thu" data-s="0" onclick="cycleDay(this)">Thu &mdash; Off</span>
+          <span class="day-pill" data-day="Fri" data-s="0" onclick="cycleDay(this)">Fri &mdash; Off</span>
+          <span class="day-pill" data-day="Sat" data-s="0" onclick="cycleDay(this)">Sat &mdash; Off</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-hd"><div class="sec-ico">📡</div><div class="sec-ttl">GPS Metrics</div><div class="sec-rule"></div></div>
+      <div class="card">
+        <span class="clbl">Squad averages &mdash; leave blank if not tracked this week</span>
+        <div class="g3">
+          <div class="fld"><label>Total Distance (m)</label><input type="number" id="sc-dist" placeholder="e.g. 3500"></div>
+          <div class="fld"><label>High-Speed Run (m)</label><input type="number" id="sc-hsr" placeholder="e.g. 1500"></div>
+          <div class="fld"><label>Intensity (m/min)</label><input type="number" id="sc-dpm" placeholder="e.g. 54" step="0.1"></div>
+          <div class="fld"><label>HML Distance (m)</label><input type="number" id="sc-hml" placeholder="e.g. 350"></div>
+          <div class="fld"><label>Max Speed (m/s)</label><input type="number" id="sc-spd" placeholder="e.g. 27.5" step="0.1"></div>
+          <div class="fld"><label>Sprint Count</label><input type="number" id="sc-spr" placeholder="e.g. 12"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-hd"><div class="sec-ico">🏋️</div><div class="sec-ttl">Strength and Power</div><div class="sec-rule"></div></div>
+      <div class="card">
+        <div class="g2" style="margin-bottom:10px">
+          <div class="fld"><label>Gym Sessions Completed</label><input type="number" id="sc-gym" placeholder="0" min="0"></div>
+          <div>
+            <span class="clbl">Programme Phase</span>
+            <div class="pills" id="phasePills">
+              <span class="pill" onclick="oneOnly(this,this.closest('.pills'))">GPP</span>
+              <span class="pill" onclick="oneOnly(this,this.closest('.pills'))">SPP</span>
+              <span class="pill" onclick="oneOnly(this,this.closest('.pills'))">Competition</span>
+              <span class="pill" onclick="oneOnly(this,this.closest('.pills'))">Taper</span>
+              <span class="pill" onclick="oneOnly(this,this.closest('.pills'))">Recovery</span>
+            </div>
+          </div>
+        </div>
+        <span class="clbl">Strength Notes</span>
+        <textarea id="sc-str" placeholder="Key lifts, testing results, flags for coaching staff..."></textarea>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-hd"><div class="sec-ico">📈</div><div class="sec-ttl">Load Management</div><div class="sec-rule"></div></div>
+      <div class="card">
+        <div class="g2" style="margin-bottom:12px">
+          <div class="fld"><label>ACWR This Week</label><input type="number" id="sc-acwr" placeholder="e.g. 1.05" step="0.01" min="0" max="3"></div>
+          <div>
+            <span class="clbl">Load Trend</span>
+            <div class="pills" id="trendPills" style="margin-top:2px">
+              <span class="pill" onclick="oneOnly(this,this.closest('.pills'))">Rising</span>
+              <span class="pill" onclick="oneOnly(this,this.closest('.pills'))">Stable</span>
+              <span class="pill" onclick="oneOnly(this,this.closest('.pills'))">Falling</span>
+            </div>
+          </div>
+        </div>
+        <span class="clbl">Recovery Quality &mdash; Squad Average</span>
+        <div class="dot-row"><span class="dot-lbl">Sleep Quality</span><div class="dots" id="d-sleep"></div></div>
+        <div class="dot-row"><span class="dot-lbl">Nutrition</span><div class="dots" id="d-nutr"></div></div>
+        <div class="dot-row"><span class="dot-lbl">Overall Recovery</span><div class="dots" id="d-recov"></div></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-hd"><div class="sec-ico">🚩</div><div class="sec-ttl">Observations and Priorities</div><div class="sec-rule"></div></div>
+      <div class="card">
+        <span class="clbl">Key Observations This Week *</span>
+        <textarea id="sc-obs" placeholder="Standout performers, physical concerns, training quality, anything coaching staff need to know..."></textarea>
+        <span class="clbl" style="margin-top:12px;display:block">Next Week Priorities *</span>
+        <textarea id="sc-nxt" placeholder="Loading plan, testing, injury returns, key sessions ahead..."></textarea>
+        <span class="clbl" style="margin-top:12px;display:block">Flags for HP Management</span>
+        <textarea id="sc-flg" class="sh" placeholder="Anything requiring Martin or Naca's attention..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- HEAD COACH -->
+  <div id="form-hc" style="display:none">
+
+    <div class="sec">
+      <div class="sec-hd"><div class="sec-ico">🏉</div><div class="sec-ttl">Training Week Overview</div><div class="sec-rule"></div></div>
+      <div class="card">
+        <div class="g3" style="margin-bottom:10px">
+          <div class="fld"><label>Players Present</label><input type="number" id="hc-pres" placeholder="0" min="0"></div>
+          <div class="fld"><label>Squad Available</label><input type="number" id="hc-sqd" placeholder="0" min="0"></div>
+          <div>
+            <span class="clbl">Team Morale</span>
+            <div class="dots" id="d-morale" style="margin-top:4px"></div>
+          </div>
+        </div>
+        <span class="clbl">General Notes on the Week *</span>
+        <textarea id="hc-ovr" placeholder="How did the week go? Training quality, attitude, standout moments..."></textarea>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-hd"><div class="sec-ico">🎯</div><div class="sec-ttl">Tactical Focus</div><div class="sec-rule"></div></div>
+      <div class="card">
+        <span class="clbl">Primary Themes This Week</span>
+        <div class="pills" id="tacPills" style="margin-bottom:12px">
+          <span class="pill" onclick="this.classList.toggle('on')">Set Piece</span>
+          <span class="pill" onclick="this.classList.toggle('on')">Defence</span>
+          <span class="pill" onclick="this.classList.toggle('on')">Attack</span>
+          <span class="pill" onclick="this.classList.toggle('on')">Lineout</span>
+          <span class="pill" onclick="this.classList.toggle('on')">Scrum</span>
+          <span class="pill" onclick="this.classList.toggle('on')">Kick Game</span>
+          <span class="pill" onclick="this.classList.toggle('on')">Breakdown</span>
+          <span class="pill" onclick="this.classList.toggle('on')">Transition</span>
+          <span class="pill" onclick="this.classList.toggle('on')">Game Management</span>
+          <span class="pill" onclick="this.classList.toggle('on')">Combinations</span>
+        </div>
+        <span class="clbl">Tactical Notes *</span>
+        <textarea id="hc-tac" placeholder="What progressed well, what needs more work next week..."></textarea>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-hd"><div class="sec-ico">✅</div><div class="sec-ttl">Team Readiness</div><div class="sec-rule"></div></div>
+      <div class="card">
+        <div class="g2" style="margin-bottom:12px">
+          <div>
+            <span class="clbl">Overall Readiness</span>
+            <div class="dots" id="d-ready" style="margin-top:4px"></div>
+          </div>
+          <div>
+            <span class="clbl">Physical Condition</span>
+            <div class="dots" id="d-phys" style="margin-top:4px"></div>
+          </div>
+        </div>
+        <span class="clbl">Availability Comments</span>
+        <textarea id="hc-avail" class="sh" placeholder="Any concerns about availability for next session or match..."></textarea>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-hd"><div class="sec-ico">🚨</div><div class="sec-ttl">Flags and Priorities</div><div class="sec-rule"></div></div>
+      <div class="card">
+        <span class="clbl">Issues Requiring HP Attention</span>
+        <textarea id="hc-flg" class="sh" placeholder="Anything needing S&C, medical, or management follow-up..."></textarea>
+        <span class="clbl" style="margin-top:12px;display:block">Next Week Focus *</span>
+        <textarea id="hc-nxt" placeholder="Key sessions, selection, preparation targets, opposition notes..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- MEDICAL -->
+  <div id="form-md" style="display:none">
+
+    <div class="sec">
+      <div class="sec-hd"><div class="sec-ico">📊</div><div class="sec-ttl">Squad Availability</div><div class="sec-rule"></div></div>
+      <div class="card">
+        <div class="g3" style="margin-bottom:10px">
+          <div class="fld"><label>Full Training</label><input type="number" id="md-full" placeholder="0" min="0"></div>
+          <div class="fld"><label>Modified Training</label><input type="number" id="md-mod" placeholder="0" min="0"></div>
+          <div class="fld"><label>Non-Training</label><input type="number" id="md-out" placeholder="0" min="0"></div>
+        </div>
+        <span class="clbl">Unavailable / Modified Players *</span>
+        <textarea id="md-names" class="sh" placeholder="e.g. Player A (modified - hamstring), Player B (unavailable - ankle)..."></textarea>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-hd"><div class="sec-ico">🩺</div><div class="sec-ttl">Injury Register</div><div class="sec-rule"></div></div>
+      <div class="card">
+        <div class="inj-hdr"><span>Player</span><span>Diagnosis</span><span>Est. Return</span><span></span></div>
+        <div id="injRows"></div>
+        <button class="add-btn" onclick="addInj()">+ Add Player</button>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-hd"><div class="sec-ico">🧠</div><div class="sec-ttl">HIA / Concussion</div><div class="sec-rule"></div></div>
+      <div class="card">
+        <div class="g2" style="margin-bottom:10px">
+          <div class="fld"><label>HIA Incidents This Week</label><input type="number" id="md-hia" placeholder="0" min="0"></div>
+          <div class="fld"><label>Players in GRTP</label><input type="number" id="md-grtp" placeholder="0" min="0"></div>
+        </div>
+        <span class="clbl">HIA Notes</span>
+        <textarea id="md-hia-n" class="sh" placeholder="Player names, protocol stage, expected clearance..."></textarea>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-hd"><div class="sec-ico">🤒</div><div class="sec-ttl">Illness and General Health</div><div class="sec-rule"></div></div>
+      <div class="card">
+        <textarea id="md-ill" class="sh" placeholder="Illness, prevention protocols, general health flags this week..."></textarea>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-hd"><div class="sec-ico">🔄</div><div class="sec-ttl">Rehab Progressions</div><div class="sec-rule"></div></div>
+      <div class="card">
+        <textarea id="md-rehab" placeholder="Players in rehab - current stage and expected return to full training..."></textarea>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-hd"><div class="sec-ico">🚨</div><div class="sec-ttl">Flags for HP and Coaching</div><div class="sec-rule"></div></div>
+      <div class="card">
+        <textarea id="md-flg" placeholder="Medical concerns requiring HP unit or coaching staff awareness..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav">
+    <button class="nav-btn back" onclick="goBack(1)">← Back</button>
+    <button class="nav-btn next" onclick="goNext(1)">Review &rarr;</button>
+  </div>
+</div>
+
+<!-- PAGE 2: REVIEW AND SUBMIT -->
+<div class="page" id="pg2">
+  <div class="sec">
+    <div class="sec-hd"><div class="sec-ico">✅</div><div class="sec-ttl">Review and Submit</div><div class="sec-rule"></div></div>
+    <div class="card" id="reviewCard" style="font-family:'DM Mono';font-size:12px;line-height:1.9;white-space:pre-wrap;color:var(--txt);max-height:480px;overflow-y:auto"></div>
+  </div>
+
+  <!-- GOOGLE SHEETS SETUP NOTE -->
+  <div class="card" style="border-color:var(--gold-b);background:var(--gold-s);margin-bottom:8px">
+    <span class="clbl" style="color:var(--gold)">Google Sheets Connection</span>
+    <p style="font-size:12px;color:var(--txt);margin-bottom:8px">To save responses to Google Sheets, enter your Google Apps Script Web App URL below. See the setup guide included with this file. Until connected, use Download or WhatsApp to send your report.</p>
+    <input type="text" id="sheets-url" placeholder="https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec" style="font-size:11px">
+  </div>
+
+  <div class="nav" style="flex-wrap:wrap;gap:8px">
+    <button class="nav-btn back" style="flex:1;min-width:100px" onclick="goBack(2)">← Back</button>
+    <button class="nav-btn submit" style="flex:2;min-width:180px" onclick="doSubmit()">Submit Report</button>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+    <button class="nav-btn next" style="flex:1;min-width:100px;font-size:14px;background:var(--surf);color:var(--mut2);border:1px solid var(--bdr2)" onclick="doDownload()">Download .txt</button>
+    <button class="nav-btn next" style="flex:1;min-width:100px;font-size:14px;background:#25D366;color:#fff" onclick="doWA('martin')">WhatsApp Martin</button>
+    <button class="nav-btn next" style="flex:1;min-width:100px;font-size:14px;background:#25D366;color:#fff" onclick="doWA('naca')">WhatsApp Naca</button>
+  </div>
+</div>
+
+<!-- PAGE 3: SUCCESS -->
+<div class="page" id="pg3">
+  <div class="success">
+    <div class="success-icon">✅</div>
+    <h2>Report Submitted</h2>
+    <p id="success-msg">Your weekly report has been sent. Vinaka!</p>
+    <button class="new-btn" onclick="resetForm()">Submit Another Report</button>
+  </div>
+</div>
+
+</div>
+<div id="toast"></div>
+
+<script>
+var DAYS_LABELS = ['Off','Easy','Moderate','Hard','Match','Rest'];
+var currentRole = '';
+
+// Build dots
+['d-sleep','d-nutr','d-recov','d-morale','d-ready','d-phys'].forEach(function(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  for (var i = 1; i <= 5; i++) {
+    (function(v) {
+      var d = document.createElement('div');
+      d.className = 'dot';
+      d.textContent = v;
+      d.onclick = function() {
+        var dots = el.querySelectorAll('.dot');
+        dots.forEach(function(x) { x.classList.remove('on'); });
+        dots.forEach(function(x) { if (parseInt(x.textContent) <= v) x.classList.add('on'); });
+      };
+      el.appendChild(d);
+    })(i);
+  }
+});
+
+function setStep(n) {
+  [0,1,2].forEach(function(i) {
+    var s = document.getElementById('stp'+i);
+    s.className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
+  });
+  document.getElementById('prog').style.width = ((n+1)/3*100) + '%';
+}
+
+function gv(id) { var e = document.getElementById(id); return e ? (e.value||'') : ''; }
+function gt(id) { return gv(id).trim() || '--'; }
+function getDots(id) {
+  var on = document.querySelectorAll('#'+id+' .dot.on');
+  return on.length ? on.length+'/5' : '--';
+}
+function getPills(id) {
+  var el = document.getElementById(id);
+  if (!el) return '--';
+  var on = el.querySelectorAll('.pill.on');
+  if (!on.length) return '--';
+  return Array.from(on).map(function(p){return p.textContent.trim();}).join(', ');
+}
+function getDays() {
+  return Array.from(document.querySelectorAll('#dayPills .day-pill')).map(function(p) {
+    var s = parseInt(p.getAttribute('data-s'));
+    return p.getAttribute('data-day') + ': ' + (s===0?'Off':DAYS_LABELS[s-1]);
+  }).join(' | ');
+}
+function getInj() {
+  var rows = document.querySelectorAll('#injRows .inj-row');
+  if (!rows.length) return 'None recorded';
+  return Array.from(rows).map(function(r) {
+    var ins = r.querySelectorAll('input');
+    return (ins[0].value||'Unknown') + ' -- ' + (ins[1].value||'--') + ' | Return: ' + (ins[2].value||'--');
+  }).join('\n');
+}
+
+function cycleDay(el) {
+  var s = (parseInt(el.getAttribute('data-s')) + 1) % (DAYS_LABELS.length + 1);
+  el.setAttribute('data-s', s);
+  el.textContent = el.getAttribute('data-day') + ' -- ' + (s===0?'Off':DAYS_LABELS[s-1]);
+}
+
+function oneOnly(el, container) {
+  container.querySelectorAll('.pill').forEach(function(p){p.classList.remove('on');});
+  el.classList.add('on');
+}
+
+function addInj() {
+  var row = document.createElement('div');
+  row.className = 'inj-row';
+  row.innerHTML = '<input type="text" placeholder="Player name"><input type="text" placeholder="Diagnosis / description"><input type="text" placeholder="Return date"><button class="rm" onclick="this.closest(\'.inj-row\').remove()">×</button>';
+  document.getElementById('injRows').appendChild(row);
+}
+
+function toast(msg, color) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = color || '#ff4060';
+  t.style.opacity = '1';
+  clearTimeout(t._t);
+  t._t = setTimeout(function(){t.style.opacity='0';}, 3500);
+}
+
+function showPage(n) {
+  [0,1,2,3].forEach(function(i){
+    document.getElementById('pg'+i).className = 'page' + (i===n?' on':'');
+  });
+  setStep(Math.min(n, 2));
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function goNext(from) {
+  if (from === 0) {
+    var name = gv('p-name').trim();
+    var role = gv('p-role');
+    var squad = gv('p-squad');
+    var week = gv('p-week');
+    if (!name || !role || !squad || !week) {
+      toast('Please fill in all fields before continuing');
+      return;
+    }
+    currentRole = role;
+    // Show correct form
+    document.getElementById('form-sc').style.display = role==='S&C Coach' ? 'block' : 'none';
+    document.getElementById('form-hc').style.display = role==='Head Coach' ? 'block' : 'none';
+    document.getElementById('form-md').style.display = role==='Medical Staff' ? 'block' : 'none';
+    // Role tag
+    var cls = role==='S&C Coach'?'sc':role==='Head Coach'?'hc':'md';
+    document.getElementById('role-tag-wrap').innerHTML = '<span class="role-tag '+cls+'">'+squad+' &mdash; '+role+' &mdash; '+week+'</span>';
+    showPage(1);
+  } else if (from === 1) {
+    // Validate required fields per role
+    var ok = true;
+    var missing = [];
+    if (currentRole === 'S&C Coach') {
+      if (!gv('sc-obs').trim()) missing.push('Key Observations');
+      if (!gv('sc-nxt').trim()) missing.push('Next Week Priorities');
+    } else if (currentRole === 'Head Coach') {
+      if (!gv('hc-ovr').trim()) missing.push('General Notes');
+      if (!gv('hc-tac').trim()) missing.push('Tactical Notes');
+      if (!gv('hc-nxt').trim()) missing.push('Next Week Focus');
+    } else if (currentRole === 'Medical Staff') {
+      if (!gv('md-names').trim()) missing.push('Unavailable / Modified Players');
+    }
+    if (missing.length) {
+      toast('Please fill in: ' + missing.join(', '));
+      return;
+    }
+    buildReview();
+    showPage(2);
+  }
+}
+
+function goBack(from) {
+  showPage(from - 1);
+}
+
+function buildReview() {
+  var squad = gv('p-squad');
+  var role = gv('p-role');
+  var week = gv('p-week');
+  var name = gv('p-name');
+  var date = new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+  var SEP = '------------------------------------------------';
+  var text = '';
+
+  if (role === 'S&C Coach') {
+    var done = gv('sc-done')||'--';
+    var plan = gv('sc-plan')||'--';
+    var pct = (done!=='--'&&plan!=='--'&&parseFloat(plan)>0) ? Math.round(parseFloat(done)/parseFloat(plan)*100)+'%' : '--';
+    var acwr = gv('sc-acwr')||'--';
+    var acwrS = acwr!=='--' ? (parseFloat(acwr)>1.3?'OVERLOAD':parseFloat(acwr)>=0.8?'OPTIMAL':'UNDERLOAD') : '--';
+    text = 'FRU HP -- S&C WEEKLY REPORT\n'
+      + squad.toUpperCase() + ' | ' + week + ' | ' + date + '\n'
+      + 'Submitted by: ' + name + '\n'
+      + 'Report to: Martin Hulme & Naca Cawanibuka\n'
+      + SEP + '\n\n'
+      + 'SESSIONS\n'
+      + 'Completed: ' + done + ' of ' + plan + ' (' + pct + ')\n'
+      + 'Active Players: ' + (gv('sc-plyrs')||'--') + '\n\n'
+      + 'LOAD PROFILE\n'
+      + getDays() + '\n\n'
+      + SEP + '\n'
+      + 'GPS METRICS\n'
+      + 'Total Distance:  ' + (gv('sc-dist')||'--') + ' m\n'
+      + 'High-Speed Run:  ' + (gv('sc-hsr')||'--') + ' m\n'
+      + 'Intensity:       ' + (gv('sc-dpm')||'--') + ' m/min\n'
+      + 'HML Distance:    ' + (gv('sc-hml')||'--') + ' m\n'
+      + 'Max Speed:       ' + (gv('sc-spd')||'--') + ' m/s\n'
+      + 'Sprint Count:    ' + (gv('sc-spr')||'--') + '\n\n'
+      + SEP + '\n'
+      + 'STRENGTH & POWER\n'
+      + 'Gym Sessions:  ' + (gv('sc-gym')||'--') + '\n'
+      + 'Phase:         ' + getPills('phasePills') + '\n'
+      + 'Notes:         ' + gt('sc-str') + '\n\n'
+      + SEP + '\n'
+      + 'LOAD MANAGEMENT\n'
+      + 'ACWR:          ' + acwr + ' [' + acwrS + ']\n'
+      + 'Trend:         ' + getPills('trendPills') + '\n'
+      + 'Sleep:         ' + getDots('d-sleep') + '\n'
+      + 'Nutrition:     ' + getDots('d-nutr') + '\n'
+      + 'Recovery:      ' + getDots('d-recov') + '\n\n'
+      + SEP + '\n'
+      + 'KEY OBSERVATIONS\n' + gt('sc-obs') + '\n\n'
+      + 'NEXT WEEK PRIORITIES\n' + gt('sc-nxt') + '\n\n'
+      + 'HP FLAGS\n' + gt('sc-flg') + '\n'
+      + SEP + '\nVinaka -- ' + squad + ' S&C Coach';
+
+  } else if (role === 'Head Coach') {
+    text = 'FRU HP -- HEAD COACH WEEKLY REPORT\n'
+      + squad.toUpperCase() + ' | ' + week + ' | ' + date + '\n'
+      + 'Submitted by: ' + name + '\n'
+      + 'Report to: Martin Hulme & Naca Cawanibuka\n'
+      + SEP + '\n\n'
+      + 'TRAINING WEEK OVERVIEW\n'
+      + 'Players Present:  ' + (gv('hc-pres')||'--') + '\n'
+      + 'Squad Available:  ' + (gv('hc-sqd')||'--') + '\n'
+      + 'Team Morale:      ' + getDots('d-morale') + '\n\n'
+      + gt('hc-ovr') + '\n\n'
+      + SEP + '\n'
+      + 'TACTICAL FOCUS\n'
+      + 'Themes: ' + getPills('tacPills') + '\n\n'
+      + gt('hc-tac') + '\n\n'
+      + SEP + '\n'
+      + 'TEAM READINESS\n'
+      + 'Overall Readiness:  ' + getDots('d-ready') + '\n'
+      + 'Physical Condition: ' + getDots('d-phys') + '\n'
+      + 'Availability:       ' + gt('hc-avail') + '\n\n'
+      + SEP + '\n'
+      + 'FLAGS & PRIORITIES\n'
+      + 'HP Attention: ' + gt('hc-flg') + '\n\n'
+      + 'Next Week:\n' + gt('hc-nxt') + '\n'
+      + SEP + '\nVinaka -- ' + squad + ' Head Coach';
+
+  } else {
+    text = 'FRU HP -- MEDICAL WEEKLY REPORT\n'
+      + squad.toUpperCase() + ' | ' + week + ' | ' + date + '\n'
+      + 'Submitted by: ' + name + '\n'
+      + 'Report to: Martin Hulme & Naca Cawanibuka\n'
+      + SEP + '\n\n'
+      + 'SQUAD AVAILABILITY\n'
+      + 'Full Training:    ' + (gv('md-full')||'--') + '\n'
+      + 'Modified:         ' + (gv('md-mod')||'--') + '\n'
+      + 'Non-Training:     ' + (gv('md-out')||'--') + '\n\n'
+      + gt('md-names') + '\n\n'
+      + SEP + '\n'
+      + 'INJURY REGISTER\n' + getInj() + '\n\n'
+      + SEP + '\n'
+      + 'HIA / CONCUSSION\n'
+      + 'Incidents:    ' + (gv('md-hia')||'0') + '\n'
+      + 'In GRTP:      ' + (gv('md-grtp')||'0') + '\n'
+      + 'Notes:        ' + gt('md-hia-n') + '\n\n'
+      + SEP + '\n'
+      + 'ILLNESS & HEALTH\n' + gt('md-ill') + '\n\n'
+      + SEP + '\n'
+      + 'REHAB PROGRESSIONS\n' + gt('md-rehab') + '\n\n'
+      + SEP + '\n'
+      + 'FLAGS FOR HP & COACHING\n' + gt('md-flg') + '\n'
+      + SEP + '\nVinaka -- ' + squad + ' Medical Staff';
+  }
+
+  window._reportText = text;
+  document.getElementById('reviewCard').textContent = text;
+}
+
+function doSubmit() {
+  var text = window._reportText || '';
+  var url = gv('sheets-url').trim();
+
+  // Try Google Sheets if URL provided
+  if (url && url.indexOf('script.google.com') > -1) {
+    var data = {
+      timestamp: new Date().toISOString(),
+      squad: gv('p-squad'),
+      role: gv('p-role'),
+      week: gv('p-week'),
+      name: gv('p-name'),
+      report: text
+    };
+    fetch(url, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    }).then(function() {
+      document.getElementById('success-msg').textContent = 'Report saved to Google Sheets. Vinaka!';
+      showPage(3);
+    }).catch(function() {
+      toast('Could not reach Google Sheets. Use WhatsApp or Download instead.', '#f5a020');
+    });
+  } else {
+    // No sheets URL - just go to success
+    document.getElementById('success-msg').textContent = 'Report generated. Use WhatsApp or Download to send it to Martin and Naca. Vinaka!';
+    showPage(3);
+  }
+}
+
+function doDownload() {
+  var text = window._reportText || '';
+  var squad = gv('p-squad').replace(/\s/g,'_');
+  var week = gv('p-week');
+  var role = gv('p-role').replace(/\s/g,'_');
+  var date = new Date().toISOString().slice(0,10);
+  var fname = 'FRU_HP_' + squad + '_' + role + '_' + week + '_' + date + '.txt';
+  var blob = new Blob([text], {type:'text/plain'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = fname;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+
+function doWA(who) {
+  var text = window._reportText || '';
+  var nums = {martin:'61450090045', naca:'6798903857'};
+  window.open('https://wa.me/' + nums[who] + '?text=' + encodeURIComponent(text), '_blank');
+}
+
+function resetForm() {
+  // Reset all inputs
+  document.querySelectorAll('input,textarea,select').forEach(function(el) {
+    el.value = '';
+  });
+  document.querySelectorAll('.pill.on,.dot.on').forEach(function(el) {
+    el.classList.remove('on');
+  });
+  document.querySelectorAll('.day-pill').forEach(function(el) {
+    el.setAttribute('data-s','0');
+    el.textContent = el.getAttribute('data-day') + ' -- Off';
+  });
+  document.getElementById('injRows').innerHTML = '';
+  window._reportText = '';
+  showPage(0);
+}
+</script>
+</body>
+</html>
